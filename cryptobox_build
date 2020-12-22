@@ -1,0 +1,21 @@
+#!/usr/env python
+from cffi import FFI
+from subprocess import Popen, PIPE
+
+
+ffi = FFI()
+
+header_path = "/usr/include/cbox.h"
+
+process = Popen(["gcc", "-E", header_path], stdout=PIPE)
+stdout, stderr = process.communicate()
+stdout = stdout.decode("utf-8")
+ffi.cdef(stdout)
+
+ffi.set_source("cryptobox._cbox",
+               '#include "cbox.h"',
+               libraries=["cryptobox"],
+               )
+
+if __name__ == "__main__":
+    ffi.compile(verbose=True)
