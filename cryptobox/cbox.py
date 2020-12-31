@@ -27,8 +27,9 @@ class CBox:
             raise Exception("CBox not initialized")
 
     def decrypt(self, from_: str, sender: str, text: bytes):
-        vec = CBoxVec()
-        r = lib.cbox_decrypt()
+        sid = generate_session_id(from_, sender)
+        session = self.session_from_message(sid, text)
+        return session.get_message()
 
     def close(self):
         r = lib.cbox_close(self._ptr)
@@ -70,6 +71,8 @@ class CBox:
             vec._ptr_ptr
         )
         session._init = True
+        session._message = vec.bytes()
+        return session
 
 
 def generate_session_id(user_id: str, client_id):
@@ -97,6 +100,7 @@ class CBoxSession:
         self._ptr_ptr = ffi.new("struct CBoxSession * *")
         self._init = False
         self.cbox = cbox
+        self._message: bytes = b''
 
     @property
     def _ptr(self):
@@ -104,3 +108,17 @@ class CBoxSession:
             return self._ptr_ptr[0]
         else:
             raise Exception("CBox not initialized")
+
+    def get_message(self):
+        return self._message
+
+    def decrypt(self, cipher: bytes) -> bytes:
+        vec = CBoxVec()
+        r = lib.cbox_decrypt(
+            self._ptr,
+            cipher,
+            len(cipher),
+            vec._ptr_ptr
+        )
+        return vec.bytes()
+
