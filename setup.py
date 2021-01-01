@@ -114,11 +114,12 @@ setup(
         'cryptobox',
         'cryptobox.cbox',
         'cryptobox._cbox',
-        'cryptobox.__version__'
+        'cryptobox.__version__',
+        'cryptobox._build_cryptobox'
     ],
     install_requires=REQUIRED,
     setup_requires=["cffi>=1.0.0"],
-    cffi_modules=["cryptobox_build:ffi"],
+    cffi_modules=["cryptobox/_build_cryptobox.py:ffi"],
     include_package_data=True,
     license='GPLv3',
     classifiers=[
