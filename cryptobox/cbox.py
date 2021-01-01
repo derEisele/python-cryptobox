@@ -1,3 +1,18 @@
+#  Copyright (c) 2021. Alexander Eisele <alexander@eiselecloud.de>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from dataclasses import dataclass, field
 
 from cryptobox._cbox import lib, ffi
@@ -26,10 +41,15 @@ class CBox:
         else:
             raise Exception("CBox not initialized")
 
-    def decrypt(self, from_: str, sender: str, text: bytes):
+    def decrypt(self, from_: str, sender: str, text: bytes) -> bytes:
         sid = generate_session_id(from_, sender)
         session = self.session_from_message(sid, text)
         return session.get_message()
+
+    def encrypt(self, user_id: str, client_id: str, pre_key: PreKey, text: bytes) -> bytes:
+        sid = generate_session_id(user_id, client_id)
+        session = self.session_from_prekey(sid, pre_key.data)
+        return session.encrypt(text)
 
     def close(self):
         r = lib.cbox_close(self._ptr)
@@ -44,18 +64,15 @@ class CBox:
 
     def session_from_prekey(self, session_id: str, prekey: bytes):
         session = CBoxSession(self)
-        size = ffi.new("size_t *")
-        size_p = len(prekey)
         r = lib.cbox_session_init_from_prekey(
             self._ptr,
-            ffi.new("unsigned char *", 1),
-            # ffi.new("unsigned char *"),
-            prekey.encode("utf8"),
-            # size[0],
-            size_p,
+            session_id.encode("utf8"),
+            prekey,
+            len(prekey),
             session._ptr_ptr
         )
         session._init = True
+        return session
 
     def session_from_message(self, session_id: str, cipher: bytes):
         session = CBoxSession(self)
@@ -122,3 +139,12 @@ class CBoxSession:
         )
         return vec.bytes()
 
+    def encrypt(self, text: bytes) -> bytes:
+        vec = CBoxVec()
+        r = lib.cbox_encrypt(
+            self._ptr,
+            text,
+            len(text),
+            vec._ptr_ptr
+        )
+        return vec.bytes()

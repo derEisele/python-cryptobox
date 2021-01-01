@@ -13,5 +13,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from ._cbox import lib, ffi
-from .__version__ import __version__
+VERSION = (0, 1, 0)
+
+__version__ = '.'.join(map(str, VERSION))
